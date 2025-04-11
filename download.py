@@ -1,5 +1,6 @@
 #from pysus.ftp.databases.sinan import SINAN
 from pysus.ftp.databases.sih import SIH
+from pysus.ftp.databases.sim import SIM
 import os
 import pandas as pd
 from tqdm import tqdm
@@ -13,7 +14,7 @@ def combine_parquet_files(folder_path, output_file):
     folder_path: str, folder containing the parquets
     output_file: str, output destination
 
-    """         
+    """
     try:
         if os.path.exists(output_file) and not os.path.isdir(output_file):
             logging.info(f"Combined parquet file already exists: {output_file}")    
@@ -33,7 +34,8 @@ def combine_parquet_files(folder_path, output_file):
         combined_df.to_parquet(output_file)
         logging.info(f"Combined parquet file created: {output_file}")
     except Exception as e:
-        logging.error(f"Erro combining parquet files: {e}")        
+        logging.error(f"Erro combining parquet files: {e}") 
+           
 
 # def download_sinan_file(disease, year, path):
 #     """
@@ -71,9 +73,33 @@ def download_sih_file():
         os.makedirs("data", exist_ok=True)
         sih = SIH().load()
         lista_grupos = ["RD", "RJ", "ER", "SP", "CH", "CM"]
+        sih.describe("data/{}.DBC")
         files = sih.get_files(lista_grupos, "RJ", 2024)
         if files:
             sih.download(files, local_dir="data")
+            logging.info(f"File {files[0]} downloaded at: data")
+            return files[0]
+    except Exception as e:
+        logging.error(f"Erro downloading file: {e}")    
+    return None
+
+def download_sim_file():
+    """
+    Downloads a file from SUS FTP server to a local destination.
+
+    Args:
+    year: year in yyyy format
+    uf: unidade federativa de sua escolha
+    path: str, Destination path
+
+    """        
+    try:
+        os.makedirs("data", exist_ok=True)
+        sim = SIM().load()
+        lista_grupos = ["CID10"]
+        files = sim.get_files(lista_grupos, "RJ", 2024)
+        if files:
+            sim.download(files, local_dir="data")
             logging.info(f"File {files[0]} downloaded at: data")
             return files[0]
     except Exception as e:
@@ -96,7 +122,7 @@ def main():
             
     # logging.basicConfig(level=getattr(logging, args.log_level), format="%(asctime)s - %(levelname)s - %(message)s")    
 
-    downloaded_file = download_sih_file()
+    downloaded_file = download_sim_file()
     file_path = f"data/{downloaded_file.name}.parquet"
     if downloaded_file:
         combine_parquet_files(file_path, file_path)
